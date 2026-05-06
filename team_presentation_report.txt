@@ -1,0 +1,354 @@
+An Optimal Samples Selection System
+Team PPT and Presentation Guide
+
+1. Project Overview
+
+This project is an Optimal Samples Selection System. It is not just a random sampling tool. The core problem is a combinatorial coverage optimization problem.
+
+The user inputs m, n, k, j, s and a rule. The system obtains n samples, generates candidate k-groups, builds coverage targets based on j and s, and selects a small number of result groups that satisfy the coverage requirement.
+
+One-sentence summary:
+The system selects a small feasible set of sample groups from many candidate groups while satisfying combinatorial coverage rules.
+
+2. Parameter Meaning
+
+m: total number of available samples.
+n: number of selected samples from m.
+k: size of each final result group.
+j: size of each checking group.
+s: size of subset inside each j-group.
+rule: how many s-subsets should be covered in each j-group.
+
+Example:
+45-10-6-6-4-1-3 means:
+m = 45, n = 10, k = 6, j = 6, s = 4, rule = at least 1 S sample, result groups = 3.
+
+3. System Architecture
+
+The project uses a layered architecture:
+
+UI Layer:
+- main_window.py
+- input_panel.py
+- result_panel.py
+- history_panel.py
+
+Service Layer:
+- sample_service.py
+- selection_service.py
+- history_service.py
+
+Core Algorithm Layer:
+- generator.py
+- coverage.py
+- optimizer.py
+- validators.py
+- models.py
+- formatter.py
+
+Storage Layer:
+- database.py
+- repositories.py
+- schema.py
+
+Entry point:
+- app.py
+
+Architecture diagram:
+
+UI Layer
+InputPanel / ResultPanel / HistoryPanel
+        |
+        v
+Service Layer
+SampleService / SelectionService / HistoryService
+        |
+        v
+Core Algorithm Layer
+Generator / Coverage / Optimizer / Validator
+        |
+        v
+Storage Layer
+SQLite Database / Repositories
+
+Explanation:
+The UI layer handles user interaction. The service layer coordinates the workflow between UI, algorithm and database. The core algorithm layer performs combination generation, coverage checking and optimization. The storage layer saves and loads historical results using SQLite.
+
+4. System Workflow
+
+Start
+  |
+  v
+Input m, n, k, j, s and rule
+  |
+  v
+Validate parameters
+  |
+  v
+Choose Random n or Input n
+  |
+  v
+Generate or read selected n samples
+  |
+  v
+Generate candidate k-groups
+  |
+  v
+Build coverage targets
+  |
+  v
+Build coverage map
+  |
+  v
+Run optimization algorithm
+  |
+  v
+Display selected samples, statistics, result groups and runtime
+  |
+  v
+Store / Display / Delete database records
+  |
+  v
+End
+
+5. Core Algorithm
+
+The system models the task as a set cover problem.
+
+Set-cover interpretation:
+- Each candidate k-group can cover several coverage targets.
+- The goal is to select a small number of k-groups.
+- All coverage targets must be covered according to the rule.
+
+Basic algorithm:
+1. Generate all candidate k-groups from selected n samples.
+2. Generate coverage targets based on j, s and rule.
+3. Build a coverage map from each k-group to the targets it can cover.
+4. Select the group covering the largest number of uncovered targets.
+5. Repeat until all targets are covered.
+6. Remove redundant groups.
+7. Return final optimized groups.
+
+Pseudo-code:
+
+Input: selected samples, k, j, s, rule
+Output: optimized result groups
+
+1. Generate candidate k-groups.
+2. Generate coverage targets.
+3. Build coverage map.
+4. uncovered_targets = all targets.
+5. result = empty.
+6. while uncovered_targets is not empty:
+       choose group covering the most uncovered targets
+       add group to result
+       update uncovered_targets
+7. remove redundant groups
+8. return result
+
+6. Algorithm Optimization Highlights
+
+This is the most important part of the presentation.
+
+6.1 Compact Target Representation
+
+For the rule:
+at least 1 S sample
+
+The original method expands all s-subsets inside every j-group.
+
+Expanded target count:
+C(n, j) * C(j, s)
+
+For Example 9:
+n = 12, j = 6, s = 4
+C(12, 6) * C(6, 4) = 924 * 15 = 13860 targets
+
+Optimization:
+For at least-one rule, a k-group K covers a j-group J if:
+|K intersect J| >= s
+
+So the system only needs one target for each j-group.
+
+Compact target count:
+C(n, j)
+
+For Example 9:
+C(12, 6) = 924 targets
+
+This reduces targets from 13860 to 924.
+
+Presentation sentence:
+For at-least-one S-sample cases, we avoid expanding every s-subset. Instead, we use the intersection condition |K intersect J| >= s. This greatly reduces the number of coverage targets.
+
+6.2 Bitmask-Based Coverage Encoding
+
+Traditional representation:
+A group covers targets like {1, 3, 5, 8, 20}.
+
+Bitmask representation:
+Each target is represented by one bit in an integer. If the bit is 1, the target is covered.
+
+Example:
+Target index:  1 2 3 4 5 6 7 8
+Covered:       1 0 1 1 0 0 1 0
+Bitmask:       10110010
+
+Operations:
+OR: merge covered targets.
+AND: calculate intersection.
+NOT: find uncovered targets.
+bit_count(): count covered targets.
+
+Why faster:
+Bit operations reduce repeated Python set operations and are executed efficiently at a lower level.
+
+Presentation sentence:
+We encode coverage targets as bitmasks. Coverage merging is done by OR, newly covered targets are calculated using AND and NOT, and coverage count is obtained using bit_count(). This improves runtime for medium-sized cases.
+
+6.3 Greedy Set-Cover Selection
+
+The optimizer repeatedly selects the candidate group that covers the largest number of uncovered targets.
+
+6.4 Redundancy Pruning
+
+After obtaining a feasible result, the system checks whether any selected group is redundant. If removing a group still satisfies the rule, that group is deleted.
+
+7. Project Iterations
+
+Version 1: Basic Functional Version
+Goal: Build a complete working system.
+Implemented:
+- GUI input
+- Random n and Input n
+- candidate group generation
+- basic greedy optimization
+- result display
+- SQLite database storage
+Problems:
+- rule input was not close enough to the assignment wording
+- generated samples and executed samples could be inconsistent
+- larger examples could run slowly
+
+Version 2: UI and Rule Alignment Version
+Goal: Make the system closer to the assignment template.
+Improvements:
+- input limitation hints such as 45 <= m <= 54
+- rule changed to at least [ ] S sample
+- fixed Random n / Input n logic
+- added input count checking before execution
+- improved result display
+- added database Store, Display and Delete
+
+Version 3: Algorithm Optimization Version
+Goal: Improve running time and result quality.
+Improvements:
+- compact target representation
+- set-cover based optimizer
+- bitmask-based coverage encoding
+- redundancy pruning
+- runtime display
+- background execution
+
+8. Features Developed
+
+1. Parameter input and validation.
+2. Random n and Input n sample selection.
+3. Rule input as at least [ ] S sample.
+4. Optimization result display.
+5. Runtime timer.
+6. Database Store / Display / Delete.
+7. Input count checking before execution.
+8. Results panel showing selected samples, candidate groups, coverage targets, result groups, coverage summary and every optimized group.
+
+9. Sample Run Results
+
+Case 1: Example 8
+Parameters: 45-10-6-6-4-1
+Candidate groups: C(10, 6) = 210
+Coverage targets: C(10, 6) = 210
+Result groups: 3
+Runtime: about 0.02 seconds
+Rule satisfied: True
+
+Case 2: Example 9
+Parameters: 45-12-6-6-4-1
+Before optimization: C(12, 6) * C(6, 4) = 13860 targets
+After optimization: C(12, 6) = 924 targets
+Result groups: 6
+Runtime: about 0.37 seconds
+Rule satisfied: True
+
+Case 3: Additional Case
+Parameters: 45-10-6-5-4-1
+Candidate groups: C(10, 6) = 210
+Coverage targets: C(10, 5) = 252
+Result groups: 7
+Runtime: about 0.02 seconds
+Rule satisfied: True
+
+10. Problems and Limitations
+
+1. The system does not guarantee global optimality for every input.
+2. For very large parameters, the number of combinations can still grow quickly.
+3. Complex at-least-n rules are harder than at-least-one rules.
+4. The current Print function is simple and can be improved.
+
+Safe wording:
+Do not say the system always finds the global optimum.
+Say the system finds optimized feasible results or near-optimal feasible results.
+
+11. Future Work
+
+1. Add exact solver for small and medium cases.
+2. Add branch-and-bound optimization.
+3. Add integer programming or SAT solver.
+4. Add parallel computing for large cases.
+5. Add CSV/PDF export.
+6. Improve UI layout.
+
+12. PPT Suggested Structure
+
+Slide 1: Title.
+Slide 2: Project Objective.
+Slide 3: Parameter Explanation.
+Slide 4: System Architecture.
+Slide 5: System Workflow.
+Slide 6: Set-Cover Modeling.
+Slide 7: Compact Target Representation.
+Slide 8: Bitmask Coverage Encoding.
+Slide 9: Project Iterations V1-V3.
+Slide 10: Sample Results.
+Slide 11: Features.
+Slide 12: Limitations and Future Work.
+Slide 13: Conclusion.
+
+13. 7-8 Minute Presentation Script
+
+Minute 1: Project goal.
+This project is an Optimal Samples Selection System. It solves a combinatorial coverage optimization problem, not just random sampling.
+
+Minute 2: Parameters and workflow.
+Explain m, n, k, j, s and rule. Then explain the workflow from input to database storage.
+
+Minute 3: Architecture.
+Explain UI Layer, Service Layer, Core Algorithm Layer and Storage Layer.
+
+Minute 4: Basic algorithm.
+Explain the set-cover model: candidate k-groups cover targets, and the optimizer selects a small number of groups.
+
+Minute 5: Compact target optimization.
+Explain |K intersect J| >= s and Example 9 target reduction from 13860 to 924.
+
+Minute 6: Bitmask optimization.
+Explain OR, AND, NOT and bit_count. Emphasize improved runtime.
+
+Minute 7: Results.
+Show Example 8, Example 9 and additional case runtimes and result groups.
+
+Minute 8: Limitations and conclusion.
+Explain that the system gives optimized feasible results but does not guarantee global optimum for every input.
+
+14. Short Summary for Team Members
+
+This project is a GUI-based optimal sample selection system. The main algorithm models the task as a set-cover problem. The system generates candidate k-groups and coverage targets, then selects a small number of groups to cover all targets. The main optimizations are compact target representation and bitmask-based coverage encoding. These optimizations reduce computation and make important examples finish in less than one second. The system also supports Random n, Input n, input validation, result display, runtime display and database storage.

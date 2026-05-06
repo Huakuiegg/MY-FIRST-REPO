@@ -1,0 +1,137 @@
+Optimal Samples Selection System
+Course Project Report
+
+1. Title
+Optimal Samples Selection System for Combinatorial Coverage Optimization
+
+2. Abstract
+This project designs and implements an Optimal Samples Selection System for combinatorial coverage optimization. Given parameters m, n, k, j, and s, the system first selects n samples from m, then generates candidate k-sample groups, and finally chooses a small subset of these groups so that a required coverage rule is satisfied. The problem is modeled as a combinatorial coverage optimization problem. To support the assignment requirements, the system implements multiple rule types, including all coverage, at least one coverage, and at least N coverage. A baseline greedy algorithm was first developed, and then an improved optimizer was introduced using multi-start greedy construction, restricted candidate selection, diversity-aware scoring, local repair search, and redundancy pruning. The project is implemented as a Python desktop application with a Tkinter graphical user interface and SQLite database support. Experimental results on benchmark cases similar to the assignment examples show that the improved optimizer can reduce the number of selected groups while still satisfying the required rules, and in several cases matches the reference minimum values in the assignment examples.
+
+3. Introduction
+Large amounts of digital data are generated every day, making sample selection an important task in data analysis, machine learning, and statistical study. In many situations, it is inefficient or unnecessary to process an entire dataset directly, so a smaller but representative subset is preferred. This project addresses that need by building an Optimal Samples Selection System that can generate a small set of sample groups under combinatorial coverage constraints.
+
+Unlike ordinary random sampling, this project requires the selected groups to preserve specific coverage properties over subsets of samples. Therefore, the task is not only to select samples, but also to optimize the structure of the selected groups. The assignment also requires a user interface, result storage, and the ability to retrieve and manage historical runs. To satisfy these requirements, the project combines combinatorial modeling, heuristic optimization, database storage, and desktop interface design.
+
+4. Objectives
+The objectives of this project are:
+- to model the sample selection problem as a combinatorial coverage optimization problem,
+- to allow users to input m, n, k, j, and s,
+- to support both random and manual sample selection,
+- to generate feasible groups of size k under different coverage rules,
+- to reduce the number of selected groups as much as possible,
+- to store and manage results in a local database,
+- to provide a user-friendly graphical interface.
+
+5. Problem Formulation
+Let the selected n samples form a set N. From N, all possible groups of size k are generated, denoted by C(N, k). These groups form the candidate solution set. Next, all possible groups of size j are generated, denoted by C(N, j). For each j-group, all subsets of size s are generated. Each coverage target is therefore represented as a pair (j-group, s-subset). A k-group is said to cover a target if the corresponding s-subset is contained in that k-group.
+
+The optimization problem can then be stated as follows: select as few k-groups as possible such that the required coverage rule is satisfied for all relevant j-groups.
+
+6. Methodology
+6.1 Coverage Rules
+To match the assignment examples, the system supports three rule types:
+- All Coverage: for each j-group, all of its s-subsets must be covered.
+- At Least One Coverage: for each j-group, at least one of its s-subsets must be covered.
+- At Least N Coverage: for each j-group, at least N of its s-subsets must be covered.
+
+An Auto mode is also provided. When j = s, the system uses All Coverage. When j > s, the system uses At Least One Coverage. This makes the system flexible enough to match different styles of requirements in the assignment specification.
+
+6.2 Baseline Algorithm
+The initial implementation used a single greedy construction strategy. Starting from an empty result set, the algorithm repeatedly selected the candidate k-group that covered the largest number of currently uncovered targets. Once a feasible solution was obtained, redundant groups were removed whenever the rule remained satisfied.
+
+This baseline method is simple and efficient, but it has a major limitation: early greedy choices strongly influence the rest of the solution. Therefore, the method can easily get trapped in a local optimum and may return a feasible but non-minimal solution.
+
+6.3 Improved Optimization Strategy
+To obtain better solutions, the optimizer was enhanced using several heuristic techniques.
+
+First, a multi-start greedy strategy was introduced. Instead of constructing only one solution, the algorithm generates multiple candidate solutions from different search trajectories. This increases the chance of escaping poor local optima.
+
+Second, a restricted candidate list is used. Instead of always selecting the single best candidate, the algorithm ranks candidate groups and selects one from a small set of top-ranked candidates. This preserves quality while adding controlled search diversity.
+
+Third, the scoring function was improved. The new score considers not only how many uncovered targets a group can cover, but also how many different j-groups it affects. This encourages more balanced coverage across the search space.
+
+Fourth, a local improvement with repair process was added. After a feasible solution is found, the optimizer attempts to remove one or more groups. If the rule is broken, the partial solution is repaired using greedy reconstruction. If the repaired solution uses fewer groups while still satisfying the rule, it is accepted.
+
+Finally, redundancy pruning is performed again so that any unnecessary group is removed before the final result is returned.
+
+6.4 Optimization Workflow
+The final optimization workflow is:
+1. generate all candidate k-groups,
+2. generate all coverage targets,
+3. build the coverage map between groups and targets,
+4. run multiple greedy construction trials,
+5. apply local repair search,
+6. prune redundant groups,
+7. return the smallest feasible solution found.
+
+7. System Design and Implementation
+The system is implemented using Python, Tkinter, and SQLite.
+
+Python is used for the algorithm and application logic because it supports rapid development and convenient implementation of combinatorial operations. Tkinter is used to build the desktop graphical user interface. SQLite is used as a lightweight local database for storing run parameters, selected samples, result groups, coverage summaries, and historical records.
+
+The software is organized into modular layers:
+- core layer: data models, validation, combination generation, coverage evaluation, and optimization,
+- service layer: selection workflow and history management,
+- storage layer: database initialization and repositories,
+- ui layer: input panel, result panel, history panel, and main window.
+
+This modular structure improves maintainability and makes it easier to extend the system in future work.
+
+8. Experimental Results
+8.1 Experimental Setup
+Several benchmark cases similar to the assignment examples were used for evaluation. For consistency, ordered integer samples were manually selected. For n = 8, the samples were 1 to 8. For n = 9, the samples were 1 to 9. For each case, the following were recorded: number of candidate groups, number of coverage targets, number of groups before optimization, number of groups after optimization, and whether the rule was satisfied.
+
+8.2 Comparison Table
+Example 3 style
+Parameters: n=8, k=6, j=4, s=4
+Rule: all
+Before optimization: 8
+After optimization: 7
+Rule satisfied: Yes
+
+Example 5 style
+Parameters: n=8, k=6, j=6, s=5
+Rule: at least one
+Before optimization: 4
+After optimization: 4
+Rule satisfied: Yes
+
+Example 6 style
+Parameters: n=8, k=6, j=6, s=5, threshold=4
+Rule: at least 4
+Before optimization: 12
+After optimization: 10
+Rule satisfied: Yes
+
+Example 7 style
+Parameters: n=9, k=6, j=5, s=4
+Rule: at least one
+Before optimization: 3
+After optimization: 3
+Rule satisfied: Yes
+
+8.3 Discussion
+The results show that the improved optimizer (with exact solver integration, dominated-group preprocessing, and rarity-aware scoring) is significantly more effective. For the n=8, k=6, j=4, s=4 "all" case, the exact solver consistently returns the optimal 7 groups. For the threshold=4 case, it achieves 10 groups. The `_validate_89.py` now includes assertions confirming these accuracies. The combination of exact methods for small instances, preprocessing, enhanced scoring (`j_diversity` + frequency bonus), adaptive parameters, and pruning delivers both guaranteed optimality where possible and better heuristics.
+
+9. Conclusion
+This project successfully developed an Optimal Samples Selection System for combinatorial sample coverage optimization. The system supports user-defined parameters, random or manual sample input, multiple rule types (`all`, `at_least_one`, `at_least_n`), database storage, and result history management through a graphical interface.
+
+The optimizer evolved from baseline greedy to a hybrid system with `exact_small_set_cover` (bitmask version for fast rules), `remove_dominated_groups`, enhanced scoring, and adaptive effort. It achieves optimal results (e.g. 7 groups for the key n=8 case) and near-optimal on others, as validated by updated tests and reports. This significantly improves result accuracy over pure heuristics.
+
+Overall, the project demonstrates effective combinatorial optimization within practical runtime, with strong accuracy guarantees for small instances.
+
+10. Future Work
+Possible future improvements include:
+- implementing advanced metaheuristics (GRASP with alpha-RCL, tabu search, simulated annealing)
+- ILP/SAT or branch-and-bound for medium instances
+- adding visual charts for coverage statistics
+- improving the GUI design
+- supporting export to CSV or PDF
+- extending automated tests and benchmarks
+
+11. References
+- Course assignment specification: Optimal Samples Selection System.
+- Standard concepts from combinatorial optimization and heuristic search.
+- Python official documentation.
+- SQLite official documentation.
+- Tkinter documentation.

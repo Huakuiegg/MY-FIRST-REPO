@@ -1,0 +1,6 @@
+# Desktop dependencies
+# Tkinter is included with standard Python on most desktop installations.
+# sqlite3 is part of the Python standard library.
+
+# Mobile app dependency
+kivy>=2.3,<3.0
