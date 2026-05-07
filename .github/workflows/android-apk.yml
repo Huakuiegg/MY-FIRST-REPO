@@ -78,6 +78,17 @@ jobs:
           tail -n 200 buildozer-full.log || true
           echo "===== Matching error lines ====="
           grep -niE "error|exception|traceback|failed|stderr" buildozer-full.log | tail -n 100 || true
+          echo "===== Gradle wrapper properties ====="
+          find .buildozer -path "*/gradle/wrapper/gradle-wrapper.properties" -print -exec sed -n '1,120p' {} \; || true
+          echo "===== Android build.gradle snippets ====="
+          find .buildozer -path "*/build.gradle" -print -exec grep -nE "com.android.tools.build:gradle|compileSdkVersion|targetSdkVersion|minSdkVersion" {} \; || true
+          echo "===== gradlew stacktrace rerun ====="
+          GRADLE_DIR=$(find .buildozer -type f -name gradlew | head -n 1 | xargs -r dirname)
+          if [ -n "$GRADLE_DIR" ]; then
+            cd "$GRADLE_DIR"
+            chmod +x gradlew || true
+            ./gradlew clean assembleDebug --stacktrace --info || true
+          fi
 
       - name: Upload build logs on failure
         if: failure()
